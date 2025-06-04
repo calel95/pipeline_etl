@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "pipeline-etl"
+version = "0.1.0"
+description = ""
+authors = ["Calel <borgescalel@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+mkdocs = "^1.6.1"
+mkdocs-mermaid2-plugin = "^1.2.1"
+mkdocs-material = "^9.6.14"
+pandera = "^0.24.0"
+pandas = "^2.2.3"
+psycopg2 = "^2.9.10"
+sqlalchemy = "^2.0.41"
+pytest = "^8.4.0"
+taskipy = "^1.14.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.taskipy.tasks]
+test = "pytest -v"
