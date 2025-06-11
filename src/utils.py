@@ -19,13 +19,13 @@ class Util:
         myzip.extractall(f"data/raw/{datetime.datetime.now().strftime('%Y%m%d_%H_%M_%S')}")
         print(f"Arquivo {file} extraído com sucesso na raw.")
 
-    def bolsa_familia_por_municipio_request_api(self, ano_mes: str, codigo_ibge: int):
+    def bolsa_familia_por_municipio(self, ano_mes: str, codigo_ibge: int):
         """
         Esta função faz uma requisição à API do Portal da Transparência para obter o valor total e a quantidade de beneficiados no Bolsa Família por município em um determinado mês e ano.
 
         Args:
             ano_mes (str): Formato 'YYYYMM', por exemplo, '202501' para janeiro de 2025.
-            codigo_ibge (str): Código IBGE do município, por exemplo, '3300258' para o município de ARRAIAL DO CABO.
+            codigo_ibge (int): Código IBGE do município, por exemplo, 3300258 para o município de ARRAIAL DO CABO.
         """
         url = f'https://api.portaldatransparencia.gov.br/api-de-dados/novo-bolsa-familia-por-municipio?mesAno={ano_mes}&codigoIbge={codigo_ibge}&pagina=1'
         load_dotenv('.env')
@@ -75,4 +75,45 @@ class Util:
         
         return codigo_ibge
     
+    def orgaos_siape(self):
+        """
+        Esta função faz uma requisição à API do Portal da Transparência para obter o valor total e a quantidade de beneficiados no Bolsa Família por município em um determinado mês e ano.
 
+        Args:
+            ano_mes (str): Formato 'YYYYMM', por exemplo, '202501' para janeiro de 2025.
+            codigo_ibge (int): Código IBGE do município, por exemplo, 3300258 para o município de ARRAIAL DO CABO.
+        """
+        url = f'https://api.portaldatransparencia.gov.br/api-de-dados/servidores/por-orgao?tipoServidor=2&pagina=1'
+        load_dotenv('.env')
+        headers = {os.getenv('API_PORTAL_DA_TRANSPARENCIA_KEY'): os.getenv('API_PORTAL_DA_TRANSPARENCIA_TOKEN')}
+        response = requests.get(url,headers=headers)
+        data = response.json()
+        #print(data)
+
+        df_lista = []
+
+        for item in data:
+            registro = {
+                'qnt_pessoas': item['qntPessoas'],
+                'descricao_situacao': item['descSituacao'],
+                'descricao_tipo_vinculo': item['descTipoVinculo'],
+                'descricao_tipo_servidor': item['descTipoServidor'],
+                'codigo_orgao_exercicio_siape': item['codOrgaoExercicioSiape'],
+                'nome_orgao_exercicio_siape': item['nomOrgaoExercicioSiape']
+            }
+            df_lista.append(registro)
+
+
+            # df = pd.DataFrame({
+            # 'qnt_pessoas': [qnt_pessoas],
+            # 'descricao_situacao': [descricao_situacao],
+            # 'descricao_tipo_vinculo': [descricao_tipo_vinculo],
+            # 'descricao_tipo_servidor': [descricao_tipo_servidor],
+            # 'codigo_orgao_exercicio_siape': [codigo_orgao_exercicio_siape],	
+            # 'nome_orgao_exercicio_siape': [nome_orgao_exercicio_siape]
+            # })
+            #df = pd.DataFrame(item, columns=['qntPessoas','descSituacao','descTipoVinculo','descTipoServidor','codOrgaoExercicioSiape','nomOrgaoExercicioSiape'], index=[0])
+
+        df = pd.DataFrame(df_lista)
+        print(df)
+        return df
