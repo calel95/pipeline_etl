@@ -1,4 +1,4 @@
-from src.funcao_teste import soma
+from src.main import soma
 
 def test_soma():
     """Teste da função soma."""

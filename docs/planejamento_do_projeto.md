@@ -108,4 +108,3 @@
 - Monitorar custos e espaço usado no OneDrive.
 
 - Estabelecer processo para lidar com mudanças na API ou formato dos arquivos.
-
