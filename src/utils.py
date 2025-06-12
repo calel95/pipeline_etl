@@ -4,9 +4,12 @@ import zipfile
 import pandas as pd
 import datetime
 import requests
-from requests.auth import HTTPDigestAuth
 from dotenv import load_dotenv
+from db import SessionLocal, engine, Base
+from models import servidoresPorOrgao
+from schemas import ServidorePoOrgaoSchema
 
+Base.metadata.create_all(bind=engine)
 
 class Util:
     def __init__(self):
@@ -75,15 +78,15 @@ class Util:
         
         return codigo_ibge
     
-    def orgaos_siape(self):
+    def orgaos_siape(self,tipo_servidor: int):
         """
-        Esta função faz uma requisição à API do Portal da Transparência para obter o valor total e a quantidade de beneficiados no Bolsa Família por município em um determinado mês e ano.
-
+        Esta função faz uma requisição à API do Portal da Transparência para obter informações sobre órgãos do SIAPE.
         Args:
-            ano_mes (str): Formato 'YYYYMM', por exemplo, '202501' para janeiro de 2025.
-            codigo_ibge (int): Código IBGE do município, por exemplo, 3300258 para o município de ARRAIAL DO CABO.
+            tipo_servidor (str): Tipo de servidor, por exemplo, 1 para servidores civis e 2 para militares.
         """
-        url = f'https://api.portaldatransparencia.gov.br/api-de-dados/servidores/por-orgao?tipoServidor=2&pagina=1'
+
+
+        url = f'https://api.portaldatransparencia.gov.br/api-de-dados/servidores/por-orgao?tipoServidor={tipo_servidor}&pagina=1'
         load_dotenv('.env')
         headers = {os.getenv('API_PORTAL_DA_TRANSPARENCIA_KEY'): os.getenv('API_PORTAL_DA_TRANSPARENCIA_TOKEN')}
         response = requests.get(url,headers=headers)
@@ -115,5 +118,32 @@ class Util:
             #df = pd.DataFrame(item, columns=['qntPessoas','descSituacao','descTipoVinculo','descTipoServidor','codOrgaoExercicioSiape','nomOrgaoExercicioSiape'], index=[0])
 
         df = pd.DataFrame(df_lista)
-        print(df)
+        #print(df)
         return df
+    
+    def servidores_por_orgao(self, tipo_servidor: int, situacao_servidor: int, codigo_orgao: int,salvar: bool = False):
+        """Faz uma requisição para obter informações sobre quantidade de servidores de um órgão específico, situacao especifica e tipo do servidor especifico.
+
+        Args:
+            tipo_servidor (int): Tipo do Servidor (Civil=1 ou Militar=2)
+            situacao_servidor (int): Situação do Servidor (Ativo=1, Inativo=2 ou Pensionista=3)
+            codigo_orgao (int): Código do Órgão do SIAPE, por exemplo, 16000 para o comando do exército.
+        """
+
+
+        url = f'https://api.portaldatransparencia.gov.br/api-de-dados/servidores?tipoServidor={tipo_servidor}&situacaoServidor={situacao_servidor}&orgaoServidorExercicio={codigo_orgao}&pagina=1'
+        load_dotenv('.env')
+        headers = {os.getenv('API_PORTAL_DA_TRANSPARENCIA_KEY'): os.getenv('API_PORTAL_DA_TRANSPARENCIA_TOKEN')}
+        response = requests.get(url,headers=headers)
+        data = response.json()
+        #print(data)
+        with SessionLocal() as db:
+            for i in data:
+                nome_servidor =  i['servidor']['pessoa']['nome']
+                
+                #lista.append(ServidorePoOrgaoSchema(nome=nome_servidor))
+                db.add(servidoresPorOrgao(nome=nome_servidor))
+            db.commit()
+
+
+        
