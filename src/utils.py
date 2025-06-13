@@ -130,7 +130,6 @@ class Util:
             codigo_orgao (int): Código do Órgão do SIAPE, por exemplo, 16000 para o comando do exército.
         """
 
-
         url = f'https://api.portaldatransparencia.gov.br/api-de-dados/servidores?tipoServidor={tipo_servidor}&situacaoServidor={situacao_servidor}&orgaoServidorExercicio={codigo_orgao}&pagina=1'
         load_dotenv('.env')
         headers = {os.getenv('API_PORTAL_DA_TRANSPARENCIA_KEY'): os.getenv('API_PORTAL_DA_TRANSPARENCIA_TOKEN')}
@@ -139,10 +138,18 @@ class Util:
         #print(data)
         with SessionLocal() as db:
             for i in data:
+                id =i["servidor"]["idServidorAposentadoPensionista"]
                 nome_servidor =  i['servidor']['pessoa']['nome']
+                codigo_orgao_servidor_lotacao =  i['servidor']['orgaoServidorLotacao']['codigo']
+                nome_orgao_servidor = i['servidor']['orgaoServidorLotacao']['nome']
+                tipo_servidor = i['servidor']['tipoServidor']
                 
                 #lista.append(ServidorePoOrgaoSchema(nome=nome_servidor))
-                db.add(servidoresPorOrgao(nome=nome_servidor))
+                db.add(servidoresPorOrgao(id=id, 
+                                          nome=nome_servidor,
+                                          codigo_orgao_servidor_lotacao=codigo_orgao_servidor_lotacao,
+                                          nome_orgao_servidor=nome_orgao_servidor,
+                                          tipo_servidor=tipo_servidor))
             db.commit()
 
 
