@@ -31,7 +31,7 @@ class Util:
             codigo_ibge (int): Código IBGE do município, por exemplo, 3300258 para o município de ARRAIAL DO CABO.
         """
         url = f'https://api.portaldatransparencia.gov.br/api-de-dados/novo-bolsa-familia-por-municipio?mesAno={ano_mes}&codigoIbge={codigo_ibge}&pagina=1'
-        load_dotenv('.env')
+        load_dotenv('.env.prd')
         headers = {os.getenv('API_PORTAL_DA_TRANSPARENCIA_KEY'): os.getenv('API_PORTAL_DA_TRANSPARENCIA_TOKEN')}
         response = requests.get(url,headers=headers)
         data = response.json()
@@ -87,7 +87,7 @@ class Util:
 
 
         url = f'https://api.portaldatransparencia.gov.br/api-de-dados/servidores/por-orgao?tipoServidor={tipo_servidor}&pagina=1'
-        load_dotenv('.env')
+        load_dotenv('.env.prd')
         headers = {os.getenv('API_PORTAL_DA_TRANSPARENCIA_KEY'): os.getenv('API_PORTAL_DA_TRANSPARENCIA_TOKEN')}
         response = requests.get(url,headers=headers)
         data = response.json()
@@ -131,7 +131,7 @@ class Util:
         """
 
         url = f'https://api.portaldatransparencia.gov.br/api-de-dados/servidores?tipoServidor={tipo_servidor}&situacaoServidor={situacao_servidor}&orgaoServidorExercicio={codigo_orgao}&pagina=1'
-        load_dotenv('.env')
+        load_dotenv('.env.prd')
         headers = {os.getenv('API_PORTAL_DA_TRANSPARENCIA_KEY'): os.getenv('API_PORTAL_DA_TRANSPARENCIA_TOKEN')}
         response = requests.get(url,headers=headers)
         data = response.json()
