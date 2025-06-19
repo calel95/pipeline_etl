@@ -19,8 +19,8 @@ def get_engine(env):
     engine = create_engine(POSTGRESQL_DATABASE_URL)
     return engine
     
-    #SessionLocal = sessionmaker(autocommit=False, autoflush=False,bind=engine)
-    #Base = declarative_base()
+#SessionLocal = sessionmaker(autocommit=False, autoflush=False,bind=get_engine("dev"))
+Base = declarative_base()
 
 
 
