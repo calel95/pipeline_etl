@@ -4,12 +4,16 @@ import zipfile
 import pandas as pd
 import datetime
 import requests
+from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
-from db import SessionLocal, engine, Base
-from models import servidoresPorOrgao
+from db import get_engine
+from models import servidoresPorOrgao, Base
 from schemas import ServidorePoOrgaoSchema
 
+engine = get_engine("dev")  # Use the production environment
 Base.metadata.create_all(bind=engine)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 
 class Util:
     def __init__(self):
@@ -136,6 +140,7 @@ class Util:
         response = requests.get(url,headers=headers)
         data = response.json()
         #print(data)
+        #engine = get_engine("prd")
         with SessionLocal() as db:
             for i in data:
                 id =i["servidor"]["idServidorAposentadoPensionista"]

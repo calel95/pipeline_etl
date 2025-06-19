@@ -1,7 +1,11 @@
 #representacao do banco de dados
 from sqlalchemy import Column, Integer, String, DateTime, Select
 from sqlalchemy.sql import func
+from sqlalchemy.orm import declarative_base
+#from db import Base
 from db import Base
+
+#Base = declarative_base()
 
 class servidoresPorOrgao(Base):
     __tablename__ = 'servidoresPorOrgao'
