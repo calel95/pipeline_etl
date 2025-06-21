@@ -10,7 +10,7 @@ from db import get_engine
 from models import servidoresPorOrgao, Base
 from schemas import ServidorePoOrgaoSchema
 
-engine = get_engine("dev")  # Use the production environment
+engine = get_engine("prd")  # Use the production environment
 Base.metadata.create_all(bind=engine)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -125,7 +125,7 @@ class Util:
         #print(df)
         return df
     
-    def servidores_por_orgao(self, tipo_servidor: int, situacao_servidor: int, codigo_orgao: int,salvar: bool = False):
+    def servidores_por_orgao(self, tipo_servidor: int, situacao_servidor: int, codigo_orgao: int,salvar_bd: bool = False):
         """Faz uma requisição para obter informações sobre quantidade de servidores de um órgão específico, situacao especifica e tipo do servidor especifico.
 
         Args:
@@ -133,29 +133,57 @@ class Util:
             situacao_servidor (int): Situação do Servidor (Ativo=1, Inativo=2 ou Pensionista=3)
             codigo_orgao (int): Código do Órgão do SIAPE, por exemplo, 16000 para o comando do exército.
         """
+        qtd_Registros = []
+        lista = []
+        pagina = 1
+        while True:
 
-        url = f'https://api.portaldatransparencia.gov.br/api-de-dados/servidores?tipoServidor={tipo_servidor}&situacaoServidor={situacao_servidor}&orgaoServidorExercicio={codigo_orgao}&pagina=1'
-        load_dotenv('.env.prd')
-        headers = {os.getenv('API_PORTAL_DA_TRANSPARENCIA_KEY'): os.getenv('API_PORTAL_DA_TRANSPARENCIA_TOKEN')}
-        response = requests.get(url,headers=headers)
-        data = response.json()
-        #print(data)
-        #engine = get_engine("prd")
-        with SessionLocal() as db:
-            for i in data:
-                id =i["servidor"]["idServidorAposentadoPensionista"]
-                nome_servidor =  i['servidor']['pessoa']['nome']
-                codigo_orgao_servidor_lotacao =  i['servidor']['orgaoServidorLotacao']['codigo']
-                nome_orgao_servidor = i['servidor']['orgaoServidorLotacao']['nome']
-                tipo_servidor = i['servidor']['tipoServidor']
-                
-                #lista.append(ServidorePoOrgaoSchema(nome=nome_servidor))
-                db.add(servidoresPorOrgao(id=id, 
-                                          nome=nome_servidor,
-                                          codigo_orgao_servidor_lotacao=codigo_orgao_servidor_lotacao,
-                                          nome_orgao_servidor=nome_orgao_servidor,
-                                          tipo_servidor=tipo_servidor))
-            db.commit()
+            url = f'https://api.portaldatransparencia.gov.br/api-de-dados/servidores?tipoServidor={tipo_servidor}&situacaoServidor={situacao_servidor}&orgaoServidorExercicio={codigo_orgao}&pagina={pagina}'
+            print(url)
+            load_dotenv('.env.prd')
+            headers = {os.getenv('API_PORTAL_DA_TRANSPARENCIA_KEY'): os.getenv('API_PORTAL_DA_TRANSPARENCIA_TOKEN')}
+            response = requests.get(url,headers=headers,params={"pagina":pagina})
+            data = response.json()
+            qtd_Registros.append(len(data))
+        #print(len(qtd_Registros))
+
+            if not data:
+                print("Nenhum registro encontrado.")
+                break
+
+
+            if salvar_bd:
+                with SessionLocal() as db:
+                    for i in data:
+                        id = i["servidor"]["idServidorAposentadoPensionista"]
+                        nome_servidor =  i['servidor']['pessoa']['nome']
+                        codigo_orgao_servidor_lotacao =  i['servidor']['orgaoServidorLotacao']['codigo']
+                        nome_orgao_servidor = i['servidor']['orgaoServidorLotacao']['nome']
+                        tipo_servidor = i['servidor']['tipoServidor']
+
+
+                        #lista.append(ServidorePoOrgaoSchema(nome=nome_servidor))
+                        db.add(servidoresPorOrgao(id=id, 
+                                                nome=nome_servidor,
+                                                codigo_orgao_servidor_lotacao=codigo_orgao_servidor_lotacao,
+                                                nome_orgao_servidor=nome_orgao_servidor,
+                                                tipo_servidor=tipo_servidor))
+                    db.commit()
+            else:
+                for i in data:
+                    registro = {
+                        'id': i["servidor"]["idServidorAposentadoPensionista"],
+                        'nome_servidor': i['servidor']['pessoa']['nome'],
+                        'codigo_orgao_servidor_lotacao': i['servidor']['orgaoServidorLotacao']['codigo'],
+                        'nome_orgao_servidor': i['servidor']['orgaoServidorLotacao']['nome'],
+                        'tipo_servidor': i['servidor']['tipoServidor']
+                    }
+                    lista.append(registro)
+
+                df = pd.DataFrame(lista)
+                print(df)
+
+            pagina = pagina + 1
 
 
         
