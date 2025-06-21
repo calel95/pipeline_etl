@@ -15,4 +15,7 @@ a = Util()
 #x = a.codigo_ibge_por_municipio("sapucaia do sul")
 #a.bolsa_familia_por_municipio("202501", x)
 
-a.servidores_por_orgao(2,1,70000)
+#df = a.orgaos_siape(2)
+#print(df)
+
+a.servidores_por_orgao(2,1,16000)
