@@ -18,4 +18,4 @@ a = Util()
 #df = a.orgaos_siape(2)
 #print(df)
 
-a.servidores_por_orgao(2,1,16000)
+a.servidores_por_orgao(tpo_servidor=2,situacao_servidor=1,codigo_orgao=16000,salvar_bd=True)

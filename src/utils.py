@@ -125,7 +125,7 @@ class Util:
         #print(df)
         return df
     
-    def servidores_por_orgao(self, tipo_servidor: int, situacao_servidor: int, codigo_orgao: int,salvar_bd: bool = False):
+    def servidores_por_orgao(self, tpo_servidor, situacao_servidor: int, codigo_orgao: int,salvar_bd: bool = False, merge: bool = False):
         """Faz uma requisição para obter informações sobre quantidade de servidores de um órgão específico, situacao especifica e tipo do servidor especifico.
 
         Args:
@@ -138,8 +138,8 @@ class Util:
         pagina = 1
         while True:
 
-            url = f'https://api.portaldatransparencia.gov.br/api-de-dados/servidores?tipoServidor={tipo_servidor}&situacaoServidor={situacao_servidor}&orgaoServidorExercicio={codigo_orgao}&pagina={pagina}'
-            print(url)
+            url = f'https://api.portaldatransparencia.gov.br/api-de-dados/servidores?tipoServidor={tpo_servidor}&situacaoServidor={situacao_servidor}&orgaoServidorExercicio={codigo_orgao}&pagina={pagina}'
+            print(f"Carregando dados da pagina: {pagina}")
             load_dotenv('.env.prd')
             headers = {os.getenv('API_PORTAL_DA_TRANSPARENCIA_KEY'): os.getenv('API_PORTAL_DA_TRANSPARENCIA_TOKEN')}
             response = requests.get(url,headers=headers,params={"pagina":pagina})
@@ -162,12 +162,19 @@ class Util:
                         tipo_servidor = i['servidor']['tipoServidor']
 
 
-                        #lista.append(ServidorePoOrgaoSchema(nome=nome_servidor))
-                        db.add(servidoresPorOrgao(id=id, 
-                                                nome=nome_servidor,
-                                                codigo_orgao_servidor_lotacao=codigo_orgao_servidor_lotacao,
-                                                nome_orgao_servidor=nome_orgao_servidor,
-                                                tipo_servidor=tipo_servidor))
+                        if merge:
+                            db.merge(servidoresPorOrgao(id=id, 
+                                                    nome=nome_servidor,
+                                                    codigo_orgao_servidor_lotacao=codigo_orgao_servidor_lotacao,
+                                                    nome_orgao_servidor=nome_orgao_servidor,
+                                                    tipo_servidor=tpo_servidor))
+                        else:
+                            db.add(servidoresPorOrgao(id=id, 
+                                                    nome=nome_servidor,
+                                                    codigo_orgao_servidor_lotacao=codigo_orgao_servidor_lotacao,
+                                                    nome_orgao_servidor=nome_orgao_servidor,
+                                                    tipo_servidor=tpo_servidor))
+
                     db.commit()
             else:
                 for i in data:
