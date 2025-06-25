@@ -2,7 +2,7 @@
 from pydantic import BaseModel,ConfigDict
 from typing import Optional
 
-class ServidorePoOrgaoSchema(BaseModel): #View da minha API, schema de dados
+class a(BaseModel): #View da minha API, schema de dados
     nome: str
 
     #model_config = ConfigDict(from_attributes=True)
@@ -10,9 +10,11 @@ class ServidorePoOrgaoSchema(BaseModel): #View da minha API, schema de dados
         from_attributes = True
 
 class ServidoresPorOrgaoSchema(BaseModel):
-    tipo_servidor: Optional[int] = None
-    situacao_servidor: Optional[int] = None
-    codigo_orga: Optional[int] = None
+    id: int
+    nome_servidor: str
+    codigo_orgao_servidor_lotacao: int
+    nome_orgao_servidor: str
+    tipo_servidor: str
 
     class Config:
         from_attributes = True
