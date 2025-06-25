@@ -7,8 +7,8 @@ import requests
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 from db import get_engine
-from models import servidoresPorOrgao, Base
-from schemas import ServidorePoOrgaoSchema
+from models import servidoresPorOrgao, Base, OrgaosSiape
+from schemas import ServidoresPorOrgaoSchema
 
 engine = get_engine("prd")  # Use the production environment
 Base.metadata.create_all(bind=engine)
@@ -82,50 +82,87 @@ class Util:
         
         return codigo_ibge
     
-    def orgaos_siape(self,tipo_servidor: int):
+    def orgaos_siape(self,tipo_servidor: int, salvar_bd: bool = False, merge: bool = False):
         """
         Esta função faz uma requisição à API do Portal da Transparência para obter informações sobre órgãos do SIAPE.
         Args:
             tipo_servidor (str): Tipo de servidor, por exemplo, 1 para servidores civis e 2 para militares.
         """
-
-
-        url = f'https://api.portaldatransparencia.gov.br/api-de-dados/servidores/por-orgao?tipoServidor={tipo_servidor}&pagina=1'
-        load_dotenv('.env.prd')
-        headers = {os.getenv('API_PORTAL_DA_TRANSPARENCIA_KEY'): os.getenv('API_PORTAL_DA_TRANSPARENCIA_TOKEN')}
-        response = requests.get(url,headers=headers)
-        data = response.json()
-        #print(data)
-
+        qtd_Registros = []
         df_lista = []
+        pagina = 1
 
-        for item in data:
-            registro = {
-                'qnt_pessoas': item['qntPessoas'],
-                'descricao_situacao': item['descSituacao'],
-                'descricao_tipo_vinculo': item['descTipoVinculo'],
-                'descricao_tipo_servidor': item['descTipoServidor'],
-                'codigo_orgao_exercicio_siape': item['codOrgaoExercicioSiape'],
-                'nome_orgao_exercicio_siape': item['nomOrgaoExercicioSiape']
-            }
-            df_lista.append(registro)
+        while True:
 
+            url = f'https://api.portaldatransparencia.gov.br/api-de-dados/servidores/por-orgao?tipoServidor={tipo_servidor}&pagina={pagina}'
+            load_dotenv('.env.prd')
+            headers = {os.getenv('API_PORTAL_DA_TRANSPARENCIA_KEY'): os.getenv('API_PORTAL_DA_TRANSPARENCIA_TOKEN')}
+            response = requests.get(url,headers=headers)
+            data = response.json()
+            qtd_Registros.append(len(data))
+            
+            if not data:
+                print("Não encontrado nova página.")
+                break
 
-            # df = pd.DataFrame({
-            # 'qnt_pessoas': [qnt_pessoas],
-            # 'descricao_situacao': [descricao_situacao],
-            # 'descricao_tipo_vinculo': [descricao_tipo_vinculo],
-            # 'descricao_tipo_servidor': [descricao_tipo_servidor],
-            # 'codigo_orgao_exercicio_siape': [codigo_orgao_exercicio_siape],	
-            # 'nome_orgao_exercicio_siape': [nome_orgao_exercicio_siape]
-            # })
-            #df = pd.DataFrame(item, columns=['qntPessoas','descSituacao','descTipoVinculo','descTipoServidor','codOrgaoExercicioSiape','nomOrgaoExercicioSiape'], index=[0])
+            if salvar_bd:
+                with SessionLocal() as db:
+                    for i in data:
+                        qnt_pessoas = i['qntPessoas']
+                        descricao_situacao = i['descSituacao']
+                        descricao_tipo_vinculo = i['descTipoVinculo']
+                        descricao_tipo_servidor = i['descTipoServidor']
+                        codigo_orgao_exercicio_siape = i['codOrgaoExercicioSiape']
+                        nome_orgao_exercicio_siape = i['nomOrgaoExercicioSiape']
 
-        df = pd.DataFrame(df_lista)
-        #print(df)
-        return df
+                        # Verifica se o registro já existe, se sim, faz merge, se não, adiciona
+                        if merge:
+                            db.merge(OrgaosSiape(qnt_pessoas=qnt_pessoas,
+                                                descricao_situacao=descricao_situacao,
+                                                descricao_tipo_vinculo=descricao_tipo_vinculo,
+                                                descricao_tipo_servidor=descricao_tipo_servidor,
+                                                codigo_orgao_exercicio_siape=codigo_orgao_exercicio_siape,
+                                                nome_orgao_exercicio_siape=nome_orgao_exercicio_siape))
+                        else:
+                            db.add(OrgaosSiape(qnt_pessoas=qnt_pessoas,
+                                                descricao_situacao=descricao_situacao,
+                                                descricao_tipo_vinculo=descricao_tipo_vinculo,
+                                                descricao_tipo_servidor=descricao_tipo_servidor,
+                                                codigo_orgao_exercicio_siape=codigo_orgao_exercicio_siape,
+                                                nome_orgao_exercicio_siape=nome_orgao_exercicio_siape))
+                    db.commit()
+                print(f"Registros salvos na base de dados: {len(data)}")
+            else:
+                for item in data:
+                    registro = {
+                        'qnt_pessoas': item['qntPessoas'],
+                        'descricao_situacao': item['descSituacao'],
+                        'descricao_tipo_vinculo': item['descTipoVinculo'],
+                        'descricao_tipo_servidor': item['descTipoServidor'],
+                        'codigo_orgao_exercicio_siape': item['codOrgaoExercicioSiape'],
+                        'nome_orgao_exercicio_siape': item['nomOrgaoExercicioSiape']
+                    }
+                    df_lista.append(registro)
+
+                    # df = pd.DataFrame({
+                    # 'qnt_pessoas': [qnt_pessoas],
+                    # 'descricao_situacao': [descricao_situacao],
+                    # 'descricao_tipo_vinculo': [descricao_tipo_vinculo],
+                    # 'descricao_tipo_servidor': [descricao_tipo_servidor],
+                    # 'codigo_orgao_exercicio_siape': [codigo_orgao_exercicio_siape],	
+                    # 'nome_orgao_exercicio_siape': [nome_orgao_exercicio_siape]
+                    # })
+                    #df = pd.DataFrame(item, columns=['qntPessoas','descSituacao','descTipoVinculo','descTipoServidor','codOrgaoExercicioSiape','nomOrgaoExercicioSiape'], index=[0])
+
+                df = pd.DataFrame(df_lista)
+                print(df)
+            pagina = pagina + 1
+        print(f"Total de registros lidos: {sum(qtd_Registros)}")
+
+        
+        #return df
     
-    def servidores_por_orgao(self, tipo_servidor: int, situacao_servidor: int, codigo_orgao: int,salvar_bd: bool = False):
+    def servidores_por_orgao(self, tpo_servidor, situacao_servidor: int, codigo_orgao: int,salvar_bd: bool = False, merge: bool = False):
         """Faz uma requisição para obter informações sobre quantidade de servidores de um órgão específico, situacao especifica e tipo do servidor especifico.
 
         Args:
@@ -138,11 +175,11 @@ class Util:
         pagina = 1
         while True:
 
-            url = f'https://api.portaldatransparencia.gov.br/api-de-dados/servidores?tipoServidor={tipo_servidor}&situacaoServidor={situacao_servidor}&orgaoServidorExercicio={codigo_orgao}&pagina={pagina}'
-            print(url)
+            url = f'https://api.portaldatransparencia.gov.br/api-de-dados/servidores?tipoServidor={tpo_servidor}&situacaoServidor={situacao_servidor}&orgaoServidorExercicio={codigo_orgao}&pagina={pagina}'
+            print(f"Carregando dados da pagina: {pagina}")
             load_dotenv('.env.prd')
             headers = {os.getenv('API_PORTAL_DA_TRANSPARENCIA_KEY'): os.getenv('API_PORTAL_DA_TRANSPARENCIA_TOKEN')}
-            response = requests.get(url,headers=headers,params={"pagina":pagina})
+            response = requests.get(url,headers=headers)
             data = response.json()
             qtd_Registros.append(len(data))
         #print(len(qtd_Registros))
@@ -155,19 +192,45 @@ class Util:
             if salvar_bd:
                 with SessionLocal() as db:
                     for i in data:
-                        id = i["servidor"]["idServidorAposentadoPensionista"]
-                        nome_servidor =  i['servidor']['pessoa']['nome']
-                        codigo_orgao_servidor_lotacao =  i['servidor']['orgaoServidorLotacao']['codigo']
-                        nome_orgao_servidor = i['servidor']['orgaoServidorLotacao']['nome']
-                        tipo_servidor = i['servidor']['tipoServidor']
+                        schema = ServidoresPorOrgaoSchema(
+                            id = i["servidor"]["idServidorAposentadoPensionista"],
+                            nome_servidor =  i['servidor']['pessoa']['nome'],
+                            codigo_orgao_servidor_lotacao =  i['servidor']['orgaoServidorLotacao']['codigo'],
+                            nome_orgao_servidor = i['servidor']['orgaoServidorLotacao']['nome'],
+                            tipo_servidor = i['servidor']['tipoServidor']
+                        )
+
+                        model = servidoresPorOrgao(id=schema.id, 
+                                                    nome_servidor=schema.nome_servidor,
+                                                    codigo_orgao_servidor_lotacao=schema.codigo_orgao_servidor_lotacao,
+                                                    nome_orgao_servidor=schema.nome_orgao_servidor,
+                                                    tipo_servidor=schema.tipo_servidor)
+                        
+                        if merge:
+                            db.merge(model)
+                        else:
+                            db.add(model)
+
+                        # id = i["servidor"]["idServidorAposentadoPensionista"]
+                        # nome_servidor =  i['servidor']['pessoa']['nome']
+                        # codigo_orgao_servidor_lotacao =  i['servidor']['orgaoServidorLotacao']['codigo']
+                        # nome_orgao_servidor = i['servidor']['orgaoServidorLotacao']['nome']
+                        # tipo_servidor = i['servidor']['tipoServidor']
 
 
-                        #lista.append(ServidorePoOrgaoSchema(nome=nome_servidor))
-                        db.add(servidoresPorOrgao(id=id, 
-                                                nome=nome_servidor,
-                                                codigo_orgao_servidor_lotacao=codigo_orgao_servidor_lotacao,
-                                                nome_orgao_servidor=nome_orgao_servidor,
-                                                tipo_servidor=tipo_servidor))
+                        # if merge:
+                        #     db.merge(servidoresPorOrgao(id=id, 
+                        #                             nome=nome_servidor,
+                        #                             codigo_orgao_servidor_lotacao=codigo_orgao_servidor_lotacao,
+                        #                             nome_orgao_servidor=nome_orgao_servidor,
+                        #                             tipo_servidor=tpo_servidor))
+                        # else:
+                        #     db.add(servidoresPorOrgao(id=id, 
+                        #                             nome=nome_servidor,
+                        #                             codigo_orgao_servidor_lotacao=codigo_orgao_servidor_lotacao,
+                        #                             nome_orgao_servidor=nome_orgao_servidor,
+                        #                             tipo_servidor=tpo_servidor))
+
                     db.commit()
             else:
                 for i in data:
@@ -184,6 +247,7 @@ class Util:
                 print(df)
 
             pagina = pagina + 1
+        print(f"Total de registros lidos: {sum(qtd_Registros)}")
 
 
         
