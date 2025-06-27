@@ -7,8 +7,8 @@ import requests
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 from db import get_engine
-from models import servidoresPorOrgao, Base, OrgaosSiape
-from schemas import ServidoresPorOrgaoSchema
+from models import servidoresPorOrgao, Base, OrgaosSiape, servidoresRemuneracao
+from schemas import ServidoresPorOrgaoSchema, OrgaosSiapeSchema, ServidorRemuneracaoSchema
 
 engine = get_engine("prd")  # Use the production environment
 Base.metadata.create_all(bind=engine)
@@ -108,28 +108,29 @@ class Util:
             if salvar_bd:
                 with SessionLocal() as db:
                     for i in data:
-                        qnt_pessoas = i['qntPessoas']
-                        descricao_situacao = i['descSituacao']
-                        descricao_tipo_vinculo = i['descTipoVinculo']
-                        descricao_tipo_servidor = i['descTipoServidor']
-                        codigo_orgao_exercicio_siape = i['codOrgaoExercicioSiape']
+                        schema = OrgaosSiapeSchema(
+                        qnt_pessoas = i['qntPessoas'],
+                        descricao_situacao = i['descSituacao'],
+                        descricao_tipo_vinculo = i['descTipoVinculo'],
+                        descricao_tipo_servidor = i['descTipoServidor'],
+                        codigo_orgao_exercicio_siape = i['codOrgaoExercicioSiape'],
                         nome_orgao_exercicio_siape = i['nomOrgaoExercicioSiape']
+                        )
+
+                        model = OrgaosSiape(
+                            qnt_pessoas=schema.qnt_pessoas,
+                            descricao_situacao=schema.descricao_situacao,
+                            descricao_tipo_vinculo=schema.descricao_tipo_vinculo,
+                            descricao_tipo_servidor=schema.descricao_tipo_servidor,
+                            codigo_orgao_exercicio_siape=schema.codigo_orgao_exercicio_siape,
+                            nome_orgao_exercicio_siape=schema.nome_orgao_exercicio_siape
+                        )
 
                         # Verifica se o registro já existe, se sim, faz merge, se não, adiciona
                         if merge:
-                            db.merge(OrgaosSiape(qnt_pessoas=qnt_pessoas,
-                                                descricao_situacao=descricao_situacao,
-                                                descricao_tipo_vinculo=descricao_tipo_vinculo,
-                                                descricao_tipo_servidor=descricao_tipo_servidor,
-                                                codigo_orgao_exercicio_siape=codigo_orgao_exercicio_siape,
-                                                nome_orgao_exercicio_siape=nome_orgao_exercicio_siape))
+                            db.merge(model)
                         else:
-                            db.add(OrgaosSiape(qnt_pessoas=qnt_pessoas,
-                                                descricao_situacao=descricao_situacao,
-                                                descricao_tipo_vinculo=descricao_tipo_vinculo,
-                                                descricao_tipo_servidor=descricao_tipo_servidor,
-                                                codigo_orgao_exercicio_siape=codigo_orgao_exercicio_siape,
-                                                nome_orgao_exercicio_siape=nome_orgao_exercicio_siape))
+                            db.add(model)
                     db.commit()
                 print(f"Registros salvos na base de dados: {len(data)}")
             else:
@@ -144,24 +145,13 @@ class Util:
                     }
                     df_lista.append(registro)
 
-                    # df = pd.DataFrame({
-                    # 'qnt_pessoas': [qnt_pessoas],
-                    # 'descricao_situacao': [descricao_situacao],
-                    # 'descricao_tipo_vinculo': [descricao_tipo_vinculo],
-                    # 'descricao_tipo_servidor': [descricao_tipo_servidor],
-                    # 'codigo_orgao_exercicio_siape': [codigo_orgao_exercicio_siape],	
-                    # 'nome_orgao_exercicio_siape': [nome_orgao_exercicio_siape]
-                    # })
-                    #df = pd.DataFrame(item, columns=['qntPessoas','descSituacao','descTipoVinculo','descTipoServidor','codOrgaoExercicioSiape','nomOrgaoExercicioSiape'], index=[0])
 
                 df = pd.DataFrame(df_lista)
                 print(df)
             pagina = pagina + 1
         print(f"Total de registros lidos: {sum(qtd_Registros)}")
-
-        
         #return df
-    
+
     def servidores_por_orgao(self, tpo_servidor, situacao_servidor: int, codigo_orgao: int,salvar_bd: bool = False, merge: bool = False):
         """Faz uma requisição para obter informações sobre quantidade de servidores de um órgão específico, situacao especifica e tipo do servidor especifico.
 
@@ -211,27 +201,8 @@ class Util:
                         else:
                             db.add(model)
 
-                        # id = i["servidor"]["idServidorAposentadoPensionista"]
-                        # nome_servidor =  i['servidor']['pessoa']['nome']
-                        # codigo_orgao_servidor_lotacao =  i['servidor']['orgaoServidorLotacao']['codigo']
-                        # nome_orgao_servidor = i['servidor']['orgaoServidorLotacao']['nome']
-                        # tipo_servidor = i['servidor']['tipoServidor']
-
-
-                        # if merge:
-                        #     db.merge(servidoresPorOrgao(id=id, 
-                        #                             nome=nome_servidor,
-                        #                             codigo_orgao_servidor_lotacao=codigo_orgao_servidor_lotacao,
-                        #                             nome_orgao_servidor=nome_orgao_servidor,
-                        #                             tipo_servidor=tpo_servidor))
-                        # else:
-                        #     db.add(servidoresPorOrgao(id=id, 
-                        #                             nome=nome_servidor,
-                        #                             codigo_orgao_servidor_lotacao=codigo_orgao_servidor_lotacao,
-                        #                             nome_orgao_servidor=nome_orgao_servidor,
-                        #                             tipo_servidor=tpo_servidor))
-
                     db.commit()
+                print(f"Registros salvos no banco de dados: {len(data)}")
             else:
                 for i in data:
                     registro = {
@@ -249,5 +220,66 @@ class Util:
             pagina = pagina + 1
         print(f"Total de registros lidos: {sum(qtd_Registros)}")
 
+    def servidor_remuneracao(self, id_servidor: int = None, ano_mes: str = 202501, salvar_bd: bool = False, merge: bool = False):
 
+        lista = []
+
+        url = f'https://api.portaldatransparencia.gov.br/api-de-dados/servidores/remuneracao?id={id_servidor}&mesAno={ano_mes}&pagina=1'
+        load_dotenv('.env.prd')
+        headers = {os.getenv('API_PORTAL_DA_TRANSPARENCIA_KEY'): os.getenv('API_PORTAL_DA_TRANSPARENCIA_TOKEN')}
+        response = requests.get(url,headers=headers)
+        data = response.json()
         
+        if not data:
+            print("Nenhum registro encontrado.")
+            return None
+
+        if salvar_bd:
+                with SessionLocal() as db:
+                    for i in data:
+                        schema = servidoresRemuneracao(
+                            id_servidor = i["servidor"]["idServidorAposentadoPensionista"],
+                            nome_servidor = i['servidor']['pessoa']['nome'],
+                            situacao = i['servidor']['situacao'],
+                            codigo_orgao_servidor_lotacao = i['servidor']['orgaoServidorLotacao']['codigo'],
+                            orgao_servidor_lotacao = i['servidor']['orgaoServidorLotacao']['nome'],
+                            mes_ano = i['remuneracoesDTO'][0]['mesAno'],
+                            remuneracao_liquida = float((i['remuneracoesDTO'][0]['valorTotalRemuneracaoAposDeducoes']).replace('.', '').replace(',', '.')),
+                            remuneracao_bruta = i['remuneracoesDTO'][0]['rubricas'][0]['valor']
+
+                        )
+
+                        model = servidoresRemuneracao(
+                                                    id_servidor=schema.id_servidor,
+                                                    nome_servidor=schema.nome_servidor,
+                                                    situacao=schema.situacao,
+                                                    codigo_orgao_servidor_lotacao=schema.codigo_orgao_servidor_lotacao,
+                                                    orgao_servidor_lotacao=schema.orgao_servidor_lotacao,
+                                                    mes_ano=schema.mes_ano,
+                                                    remuneracao_liquida=schema.remuneracao_liquida,
+                                                    remuneracao_bruta=schema.remuneracao_bruta)
+                        
+                        if merge:
+                            db.merge(model)
+                        else:
+                            db.add(model)
+
+                    db.commit()
+                print(f"Registros salvos no banco de dados: {len(data)}")
+        
+        for i in data:
+            registro = {
+                'id_servidor': i["servidor"]["idServidorAposentadoPensionista"],
+                'nome_servidor': i['servidor']['pessoa']['nome'],
+                'situacao': i['servidor']['situacao'],
+                'codigo_orgao_servidor_lotacao': i['servidor']['orgaoServidorLotacao']['codigo'],
+                'orgao_servidor_lotacao': i['servidor']['orgaoServidorLotacao']['nome'],
+                'mes_ano': i['remuneracoesDTO'][0]['mesAno'],
+                'remuneracao_liquida': i['remuneracoesDTO'][0]['valorTotalRemuneracaoAposDeducoes'],
+                'remuneracao_bruta': i['remuneracoesDTO'][0]['rubricas'][0]['valor']
+            }
+            lista.append(registro)
+
+        df = pd.DataFrame(lista)
+        print(df)
+
