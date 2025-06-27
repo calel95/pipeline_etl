@@ -15,7 +15,9 @@ a = Util()
 #x = a.codigo_ibge_por_municipio("sapucaia do sul")
 #a.bolsa_familia_por_municipio("202501", x)
 
-#df = a.orgaos_siape(2,True)
+#df = a.orgaos_siape(tipo_servidor=2,salvar_bd=True, merge=True)
 #print(df)
 
-a.servidores_por_orgao(tpo_servidor=2,situacao_servidor=1,codigo_orgao=21000,salvar_bd=True, merge=True)
+#a.servidores_por_orgao(tpo_servidor=2,situacao_servidor=1,codigo_orgao=21000,salvar_bd=True, merge=True)
+
+a.servidor_remuneracao(id_servidor=1666505,ano_mes=202501, salvar_bd=True)
