@@ -12,6 +12,7 @@ class servidoresPorOrgao(Base):
     codigo_orgao_servidor_lotacao = Column(Integer) 
     nome_orgao_servidor = Column(String)
     tipo_servidor = Column(String)
+    cargo = Column(String) 
     #created_at = Column(DateTime, default=func.now()) #Campo adicionado por mim, ele nao vem na API, campo de controle
 
 class OrgaosSiape(Base):

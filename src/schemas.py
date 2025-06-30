@@ -20,6 +20,7 @@ class ServidoresPorOrgaoSchema(BaseModel):
     codigo_orgao_servidor_lotacao: int
     nome_orgao_servidor: str
     tipo_servidor: str
+    cargo: str
 
     class Config:
         from_attributes = True
