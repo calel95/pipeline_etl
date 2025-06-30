@@ -18,6 +18,9 @@ a = Util()
 #df = a.orgaos_siape(tipo_servidor=2,salvar_bd=True, merge=True)
 #print(df)
 
-#a.servidores_por_orgao(tpo_servidor=2,situacao_servidor=1,codigo_orgao=21000,salvar_bd=True, merge=True)
+xx = a.servidores_por_orgao(tpo_servidor=2,situacao_servidor=1,codigo_orgao=70000,salvar_bd=True, merge=False)
+#print(xx)
 
-a.servidor_remuneracao(id_servidor=1666505,ano_mes=202501, salvar_bd=True)
+# for i in xx:
+#     print(i)
+#     a.servidor_remuneracao(id_servidor=i,ano_mes=202501, salvar_bd=True)

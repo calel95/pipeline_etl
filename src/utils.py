@@ -187,14 +187,16 @@ class Util:
                             nome_servidor =  i['servidor']['pessoa']['nome'],
                             codigo_orgao_servidor_lotacao =  i['servidor']['orgaoServidorLotacao']['codigo'],
                             nome_orgao_servidor = i['servidor']['orgaoServidorLotacao']['nome'],
-                            tipo_servidor = i['servidor']['tipoServidor']
+                            tipo_servidor = i['servidor']['tipoServidor'],
+                            cargo = i['fichasMilitar'][0]['cargo']
                         )
 
                         model = servidoresPorOrgao(id=schema.id, 
                                                     nome_servidor=schema.nome_servidor,
                                                     codigo_orgao_servidor_lotacao=schema.codigo_orgao_servidor_lotacao,
                                                     nome_orgao_servidor=schema.nome_orgao_servidor,
-                                                    tipo_servidor=schema.tipo_servidor)
+                                                    tipo_servidor=schema.tipo_servidor,
+                                                    cargo=schema.cargo)
                         
                         if merge:
                             db.merge(model)
@@ -202,7 +204,7 @@ class Util:
                             db.add(model)
 
                     db.commit()
-                print(f"Registros salvos no banco de dados: {len(data)}")
+                #print(f"Total de registros salvos no banco da pagina: {len(data)}")
             else:
                 for i in data:
                     registro = {
@@ -210,17 +212,22 @@ class Util:
                         'nome_servidor': i['servidor']['pessoa']['nome'],
                         'codigo_orgao_servidor_lotacao': i['servidor']['orgaoServidorLotacao']['codigo'],
                         'nome_orgao_servidor': i['servidor']['orgaoServidorLotacao']['nome'],
-                        'tipo_servidor': i['servidor']['tipoServidor']
+                        'tipo_servidor': i['servidor']['tipoServidor'],
+                        'cargo': i['fichasMilitar'][0]['cargo']
                     }
                     lista.append(registro)
+                    #return registro["nome_servidor"]
 
                 df = pd.DataFrame(lista)
-                print(df)
+                #print(df)
+                #return df["id"]
 
             pagina = pagina + 1
         print(f"Total de registros lidos: {sum(qtd_Registros)}")
 
-    def servidor_remuneracao(self, id_servidor: int = None, ano_mes: str = 202501, salvar_bd: bool = False, merge: bool = False):
+         
+
+    def servidor_remuneracao(self, id_servidor, ano_mes: str = 202501, salvar_bd: bool = False, merge: bool = False):
 
         lista = []
 
@@ -238,7 +245,7 @@ class Util:
                 with SessionLocal() as db:
                     for i in data:
                         schema = servidoresRemuneracao(
-                            id_servidor = i["servidor"]["idServidorAposentadoPensionista"],
+                            id_servidor = id_servidor, #i["servidor"]["idServidorAposentadoPensionista"],
                             nome_servidor = i['servidor']['pessoa']['nome'],
                             situacao = i['servidor']['situacao'],
                             codigo_orgao_servidor_lotacao = i['servidor']['orgaoServidorLotacao']['codigo'],
@@ -269,7 +276,7 @@ class Util:
         
         for i in data:
             registro = {
-                'id_servidor': i["servidor"]["idServidorAposentadoPensionista"],
+                'id_servidor': id_servidor, #i["servidor"]["idServidorAposentadoPensionista"],
                 'nome_servidor': i['servidor']['pessoa']['nome'],
                 'situacao': i['servidor']['situacao'],
                 'codigo_orgao_servidor_lotacao': i['servidor']['orgaoServidorLotacao']['codigo'],
