@@ -21,6 +21,6 @@ a = Util()
 xx = a.servidores_por_orgao(tpo_servidor=2,situacao_servidor=1,codigo_orgao=70000,salvar_bd=True, merge=False)
 #print(xx)
 
-# for i in xx:
-#     print(i)
-#     a.servidor_remuneracao(id_servidor=i,ano_mes=202501, salvar_bd=True)
+for i in xx:
+    print(i)
+    a.servidor_remuneracao(id_servidor=i,ano_mes=202501, salvar_bd=True)
