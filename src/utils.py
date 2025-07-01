@@ -160,6 +160,7 @@ class Util:
             situacao_servidor (int): Situação do Servidor (Ativo=1, Inativo=2 ou Pensionista=3)
             codigo_orgao (int): Código do Órgão do SIAPE, por exemplo, 16000 para o comando do exército.
         """
+        lista_ids = []
         qtd_Registros = []
         lista = []
         pagina = 1
@@ -198,12 +199,17 @@ class Util:
                                                     tipo_servidor=schema.tipo_servidor,
                                                     cargo=schema.cargo)
                         
+                        #lista_ids.append(model.id)
+                        yield model.id
+                        #print(lista_ids)
+                        
                         if merge:
                             db.merge(model)
                         else:
                             db.add(model)
-
+                    
                     db.commit()
+                
                 #print(f"Total de registros salvos no banco da pagina: {len(data)}")
             else:
                 for i in data:
@@ -220,10 +226,11 @@ class Util:
 
                 df = pd.DataFrame(lista)
                 #print(df)
-                #return df["id"]
+                return df["id"]
 
             pagina = pagina + 1
         print(f"Total de registros lidos: {sum(qtd_Registros)}")
+        #return lista_ids
 
          
 
