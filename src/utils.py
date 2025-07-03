@@ -95,6 +95,7 @@ class Util:
         while True:
 
             url = f'https://api.portaldatransparencia.gov.br/api-de-dados/servidores/por-orgao?tipoServidor={tipo_servidor}&pagina={pagina}'
+            print(f"Carregando dados da pagina: {pagina}")
             load_dotenv('.env.prd')
             headers = {os.getenv('API_PORTAL_DA_TRANSPARENCIA_KEY'): os.getenv('API_PORTAL_DA_TRANSPARENCIA_TOKEN')}
             response = requests.get(url,headers=headers)
@@ -104,51 +105,53 @@ class Util:
             if not data:
                 print("Não encontrado nova página.")
                 break
+            try:
+                if salvar_bd:
+                    with SessionLocal() as db:
+                        for i in data:
+                            schema = OrgaosSiapeSchema(
+                            qnt_pessoas = i['qntPessoas'],
+                            descricao_situacao = i['descSituacao'],
+                            descricao_tipo_vinculo = i['descTipoVinculo'],
+                            descricao_tipo_servidor = i['descTipoServidor'],
+                            codigo_orgao_exercicio_siape = i['codOrgaoExercicioSiape'],
+                            nome_orgao_exercicio_siape = i['nomOrgaoExercicioSiape']
+                            )
 
-            if salvar_bd:
-                with SessionLocal() as db:
-                    for i in data:
-                        schema = OrgaosSiapeSchema(
-                        qnt_pessoas = i['qntPessoas'],
-                        descricao_situacao = i['descSituacao'],
-                        descricao_tipo_vinculo = i['descTipoVinculo'],
-                        descricao_tipo_servidor = i['descTipoServidor'],
-                        codigo_orgao_exercicio_siape = i['codOrgaoExercicioSiape'],
-                        nome_orgao_exercicio_siape = i['nomOrgaoExercicioSiape']
-                        )
+                            model = OrgaosSiape(
+                                qnt_pessoas=schema.qnt_pessoas,
+                                descricao_situacao=schema.descricao_situacao,
+                                descricao_tipo_vinculo=schema.descricao_tipo_vinculo,
+                                descricao_tipo_servidor=schema.descricao_tipo_servidor,
+                                codigo_orgao_exercicio_siape=schema.codigo_orgao_exercicio_siape,
+                                nome_orgao_exercicio_siape=schema.nome_orgao_exercicio_siape
+                            )
 
-                        model = OrgaosSiape(
-                            qnt_pessoas=schema.qnt_pessoas,
-                            descricao_situacao=schema.descricao_situacao,
-                            descricao_tipo_vinculo=schema.descricao_tipo_vinculo,
-                            descricao_tipo_servidor=schema.descricao_tipo_servidor,
-                            codigo_orgao_exercicio_siape=schema.codigo_orgao_exercicio_siape,
-                            nome_orgao_exercicio_siape=schema.nome_orgao_exercicio_siape
-                        )
-
-                        # Verifica se o registro já existe, se sim, faz merge, se não, adiciona
-                        if merge:
-                            db.merge(model)
-                        else:
-                            db.add(model)
-                    db.commit()
-                print(f"Registros salvos na base de dados: {len(data)}")
-            else:
-                for item in data:
-                    registro = {
-                        'qnt_pessoas': item['qntPessoas'],
-                        'descricao_situacao': item['descSituacao'],
-                        'descricao_tipo_vinculo': item['descTipoVinculo'],
-                        'descricao_tipo_servidor': item['descTipoServidor'],
-                        'codigo_orgao_exercicio_siape': item['codOrgaoExercicioSiape'],
-                        'nome_orgao_exercicio_siape': item['nomOrgaoExercicioSiape']
-                    }
-                    df_lista.append(registro)
+                            # Verifica se o registro já existe, se sim, faz merge, se não, adiciona
+                            if merge:
+                                db.merge(model)
+                            else:
+                                db.add(model)
+                        db.commit()
+                else:
+                    for item in data:
+                        registro = {
+                            'qnt_pessoas': item['qntPessoas'],
+                            'descricao_situacao': item['descSituacao'],
+                            'descricao_tipo_vinculo': item['descTipoVinculo'],
+                            'descricao_tipo_servidor': item['descTipoServidor'],
+                            'codigo_orgao_exercicio_siape': item['codOrgaoExercicioSiape'],
+                            'nome_orgao_exercicio_siape': item['nomOrgaoExercicioSiape']
+                        }
+                        df_lista.append(registro)
 
 
-                df = pd.DataFrame(df_lista)
-                print(df)
-            pagina = pagina + 1
+                    df = pd.DataFrame(df_lista)
+                    print(df)
+                pagina = pagina + 1
+            except Exception as e:
+                print(f"Erro ao processar a página {pagina}: {e}")
+                break
         print(f"Total de registros lidos: {sum(qtd_Registros)}")
         #return df
 
@@ -279,7 +282,6 @@ class Util:
                             db.add(model)
 
                     db.commit()
-                print(f"Registros salvos no banco de dados: {len(data)}")
         
         for i in data:
             registro = {
