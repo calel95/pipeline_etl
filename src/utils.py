@@ -100,11 +100,11 @@ class Util:
             headers = {os.getenv('API_PORTAL_DA_TRANSPARENCIA_KEY'): os.getenv('API_PORTAL_DA_TRANSPARENCIA_TOKEN')}
             response = requests.get(url,headers=headers)
             data = response.json()
-            qtd_Registros.append(len(data))
             
             if not data:
                 print("Não encontrado nova página.")
                 break
+            
             try:
                 if salvar_bd:
                     with SessionLocal() as db:
@@ -126,7 +126,6 @@ class Util:
                                 codigo_orgao_exercicio_siape=schema.codigo_orgao_exercicio_siape,
                                 nome_orgao_exercicio_siape=schema.nome_orgao_exercicio_siape
                             )
-
                             # Verifica se o registro já existe, se sim, faz merge, se não, adiciona
                             if merge:
                                 db.merge(model)
@@ -152,6 +151,7 @@ class Util:
             except Exception as e:
                 print(f"Erro ao processar a página {pagina}: {e}")
                 break
+            qtd_Registros.append(len(data))       
         print(f"Total de registros lidos: {sum(qtd_Registros)}")
         #return df
 
