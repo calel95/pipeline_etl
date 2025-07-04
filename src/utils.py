@@ -167,6 +167,7 @@ class Util:
         qtd_Registros = []
         lista = []
         pagina = 1
+
         while True:
 
             url = f'https://api.portaldatransparencia.gov.br/api-de-dados/servidores?tipoServidor={tpo_servidor}&situacaoServidor={situacao_servidor}&orgaoServidorExercicio={codigo_orgao}&pagina={pagina}'
@@ -175,63 +176,73 @@ class Util:
             headers = {os.getenv('API_PORTAL_DA_TRANSPARENCIA_KEY'): os.getenv('API_PORTAL_DA_TRANSPARENCIA_TOKEN')}
             response = requests.get(url,headers=headers)
             data = response.json()
-            qtd_Registros.append(len(data))
+
+            
         #print(len(qtd_Registros))
 
             if not data:
                 print("Nenhum registro encontrado.")
                 break
 
+            try:
+                if salvar_bd:
+                    with SessionLocal() as db:
+                        for i in data:
+                            schema = ServidoresPorOrgaoSchema(
+                                id = i["servidor"]["idServidorAposentadoPensionista"],
+                                nome_servidor =  i['servidor']['pessoa']['nome'],
+                                codigo_orgao_servidor_lotacao =  i['servidor']['orgaoServidorLotacao']['codigo'],
+                                nome_orgao_servidor = i['servidor']['orgaoServidorLotacao']['nome'],
+                                tipo_servidor = i['servidor']['tipoServidor'],
+                                cargo = (i['fichasCargoEfetivo'][0]['cargo'] if tpo_servidor == 1 else i['fichasMilitar'][0]['cargo'])
+                            )
 
-            if salvar_bd:
-                with SessionLocal() as db:
-                    for i in data:
-                        schema = ServidoresPorOrgaoSchema(
-                            id = i["servidor"]["idServidorAposentadoPensionista"],
-                            nome_servidor =  i['servidor']['pessoa']['nome'],
-                            codigo_orgao_servidor_lotacao =  i['servidor']['orgaoServidorLotacao']['codigo'],
-                            nome_orgao_servidor = i['servidor']['orgaoServidorLotacao']['nome'],
-                            tipo_servidor = i['servidor']['tipoServidor'],
-                            cargo = i['fichasMilitar'][0]['cargo']
-                        )
-
-                        model = servidoresPorOrgao(id=schema.id, 
-                                                    nome_servidor=schema.nome_servidor,
-                                                    codigo_orgao_servidor_lotacao=schema.codigo_orgao_servidor_lotacao,
-                                                    nome_orgao_servidor=schema.nome_orgao_servidor,
-                                                    tipo_servidor=schema.tipo_servidor,
-                                                    cargo=schema.cargo)
-                        
-                        #lista_ids.append(model.id)
-                        yield model.id
-                        #print(lista_ids)
-                        
-                        if merge:
-                            db.merge(model)
-                        else:
-                            db.add(model)
+                            model = servidoresPorOrgao(id=schema.id, 
+                                                        nome_servidor=schema.nome_servidor,
+                                                        codigo_orgao_servidor_lotacao=schema.codigo_orgao_servidor_lotacao,
+                                                        nome_orgao_servidor=schema.nome_orgao_servidor,
+                                                        tipo_servidor=schema.tipo_servidor,
+                                                        cargo=schema.cargo)
+                            
+                            #lista_ids.append(model.id)
+                            yield model.id
+                            #print(lista_ids)
+                            
+                            if merge:
+                                db.merge(model)
+                            else:
+                                db.add(model)
+                        print("commitado!")
+                        db.commit()
                     
-                    db.commit()
-                
-                #print(f"Total de registros salvos no banco da pagina: {len(data)}")
-            else:
-                for i in data:
-                    registro = {
-                        'id': i["servidor"]["idServidorAposentadoPensionista"],
-                        'nome_servidor': i['servidor']['pessoa']['nome'],
-                        'codigo_orgao_servidor_lotacao': i['servidor']['orgaoServidorLotacao']['codigo'],
-                        'nome_orgao_servidor': i['servidor']['orgaoServidorLotacao']['nome'],
-                        'tipo_servidor': i['servidor']['tipoServidor'],
-                        'cargo': i['fichasMilitar'][0]['cargo']
-                    }
-                    lista.append(registro)
-                    #return registro["nome_servidor"]
+                    #print(f"Total de registros salvos no banco da pagina: {len(data)}")
+                else:
+                    for i in data:
+                        registro = {
+                            'id': i["servidor"]["idServidorAposentadoPensionista"],
+                            'nome_servidor': i['servidor']['pessoa']['nome'],
+                            'codigo_orgao_servidor_lotacao': i['servidor']['orgaoServidorLotacao']['codigo'],
+                            'nome_orgao_servidor': i['servidor']['orgaoServidorLotacao']['nome'],
+                            'tipo_servidor': i['servidor']['tipoServidor'],
+                            'cargo': (i['fichasCargoEfetivo'][0]['cargo'] if tpo_servidor == 1 else i['fichasMilitar'][0]['cargo'])
+                        }
+                        lista.append(registro)
+                        #return registro["nome_servidor"]
 
-                df = pd.DataFrame(lista)
-                #print(df)
-                return df["id"]
+                    df = pd.DataFrame(lista)
+                    print(df)
+                    #yield df["id"]
+                    #yield df
+            except Exception as e:
+                print(f"Erro ao processar a página {pagina}: {e}")
+                break
+            except KeyboardInterrupt:
+                print("Processamento interrompido pelo usuário.")
+                break
 
             pagina = pagina + 1
+
+            qtd_Registros.append(len(data))
         print(f"Total de registros lidos: {sum(qtd_Registros)}")
         #return lista_ids
 
@@ -261,7 +272,7 @@ class Util:
                             codigo_orgao_servidor_lotacao = i['servidor']['orgaoServidorLotacao']['codigo'],
                             orgao_servidor_lotacao = i['servidor']['orgaoServidorLotacao']['nome'],
                             mes_ano = i['remuneracoesDTO'][0]['mesAno'],
-                            remuneracao_liquida = float((i['remuneracoesDTO'][0]['valorTotalRemuneracaoAposDeducoes']).replace('.', '').replace(',', '.')),
+                            remuneracao_liquida = float((i['remuneracoesDTO'][0]['valorTotalRemuneracaoAposDeducoes']).replace(' ','').replace('.', '').replace(',', '.')),
                             remuneracao_bruta = i['remuneracoesDTO'][0]['rubricas'][0]['valor']
 
                         )
@@ -280,22 +291,22 @@ class Util:
                             db.merge(model)
                         else:
                             db.add(model)
-
+                    #print("commitado!")
                     db.commit()
-        
-        for i in data:
-            registro = {
-                'id_servidor': id_servidor, #i["servidor"]["idServidorAposentadoPensionista"],
-                'nome_servidor': i['servidor']['pessoa']['nome'],
-                'situacao': i['servidor']['situacao'],
-                'codigo_orgao_servidor_lotacao': i['servidor']['orgaoServidorLotacao']['codigo'],
-                'orgao_servidor_lotacao': i['servidor']['orgaoServidorLotacao']['nome'],
-                'mes_ano': i['remuneracoesDTO'][0]['mesAno'],
-                'remuneracao_liquida': i['remuneracoesDTO'][0]['valorTotalRemuneracaoAposDeducoes'],
-                'remuneracao_bruta': i['remuneracoesDTO'][0]['rubricas'][0]['valor']
-            }
-            lista.append(registro)
+        else:
+            for i in data:
+                registro = {
+                    'id_servidor': id_servidor, #i["servidor"]["idServidorAposentadoPensionista"],
+                    'nome_servidor': i['servidor']['pessoa']['nome'],
+                    'situacao': i['servidor']['situacao'],
+                    'codigo_orgao_servidor_lotacao': i['servidor']['orgaoServidorLotacao']['codigo'],
+                    'orgao_servidor_lotacao': i['servidor']['orgaoServidorLotacao']['nome'],
+                    'mes_ano': i['remuneracoesDTO'][0]['mesAno'],
+                    'remuneracao_liquida': i['remuneracoesDTO'][0]['valorTotalRemuneracaoAposDeducoes'],
+                    'remuneracao_bruta': i['remuneracoesDTO'][0]['rubricas'][0]['valor']
+                }
+                lista.append(registro)
 
-        df = pd.DataFrame(lista)
-        print(df)
+            df = pd.DataFrame(lista)
+            print(df)
 
