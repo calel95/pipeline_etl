@@ -271,9 +271,9 @@ class Util:
                             situacao = i['servidor']['situacao'],
                             codigo_orgao_servidor_lotacao = i['servidor']['orgaoServidorLotacao']['codigo'],
                             orgao_servidor_lotacao = i['servidor']['orgaoServidorLotacao']['nome'],
-                            mes_ano = i['remuneracoesDTO'][0]['mesAno'],
-                            remuneracao_liquida = float((i['remuneracoesDTO'][0]['valorTotalRemuneracaoAposDeducoes']).replace(' ','').replace('.', '').replace(',', '.')),
-                            remuneracao_bruta = i['remuneracoesDTO'][0]['rubricas'][0]['valor']
+                            mes_ano = (i['remuneracoesDTO'][0]['mesAno'] if i['remuneracoesDTO'] else None),
+                            remuneracao_liquida = (float((i['remuneracoesDTO'][0]['valorTotalRemuneracaoAposDeducoes']).replace(' ','').replace('.', '').replace(',', '.')) if i['remuneracoesDTO'] else None),
+                            remuneracao_bruta = (i['remuneracoesDTO'][0]['rubricas'][0]['valor'] if i['remuneracoesDTO'] else None)
 
                         )
 
@@ -301,9 +301,9 @@ class Util:
                     'situacao': i['servidor']['situacao'],
                     'codigo_orgao_servidor_lotacao': i['servidor']['orgaoServidorLotacao']['codigo'],
                     'orgao_servidor_lotacao': i['servidor']['orgaoServidorLotacao']['nome'],
-                    'mes_ano': i['remuneracoesDTO'][0]['mesAno'],
-                    'remuneracao_liquida': i['remuneracoesDTO'][0]['valorTotalRemuneracaoAposDeducoes'],
-                    'remuneracao_bruta': i['remuneracoesDTO'][0]['rubricas'][0]['valor']
+                    'mes_ano': (i['remuneracoesDTO'][0]['mesAno'] if i['remuneracoesDTO'] else None),
+                    'remuneracao_liquida': (i['remuneracoesDTO'][0]['valorTotalRemuneracaoAposDeducoes'] if i['remuneracoesDTO'] else None),
+                    'remuneracao_bruta': (i['remuneracoesDTO'][0]['rubricas'][0]['valor'] if i['remuneracoesDTO'] else None)
                 }
                 lista.append(registro)
 

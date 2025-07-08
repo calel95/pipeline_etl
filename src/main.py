@@ -23,7 +23,7 @@ a = Util()
 # for i in xx:
 #     #print(i)
 #     a.servidor_remuneracao(id_servidor=i,ano_mes=202501, salvar_bd=True)
-a.servidor_remuneracao(id_servidor=622109,ano_mes=202501, salvar_bd=False)
+a.servidor_remuneracao(id_servidor=622109,ano_mes=202501, salvar_bd=True)
 
 #a.servidores_por_orgao(tpo_servidor=1,situacao_servidor=1,codigo_orgao=70000,salvar_bd=False, merge=False)
 
