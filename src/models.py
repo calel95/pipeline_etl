@@ -22,7 +22,7 @@ class OrgaosSiape(Base):
     descricao_situacao = Column(String)
     descricao_tipo_vinculo = Column(String)
     descricao_tipo_servidor = Column(String)
-    codigo_orgao_exercicio_siape = Column(Integer)
+    codigo_orgao_exercicio_siape = Column(String)
     nome_orgao_exercicio_siape = Column(String)
     #created_at = Column(DateTime, default=func.now()) #Campo adicionado por mim, ele nao vem na API, campo de controle
 
