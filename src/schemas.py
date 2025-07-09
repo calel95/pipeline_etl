@@ -7,7 +7,7 @@ class OrgaosSiapeSchema(BaseModel): #View da minha API, schema de dados
     descricao_situacao: str
     descricao_tipo_vinculo: str
     descricao_tipo_servidor: str
-    codigo_orgao_exercicio_siape: int
+    codigo_orgao_exercicio_siape: str
     nome_orgao_exercicio_siape: str
 
     #model_config = ConfigDict(from_attributes=True)
